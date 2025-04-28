@@ -191,10 +191,14 @@ List the country full names and regions for all countries in north america.
 ## (skills: select, where, order by)
 
 run_sql_and_return_html(cnx,"""
-select short_name, country_full_name, region
-from wdi_country
-where lower(region) = 'north america'
-order by short_name
+select 
+  region, short_name, country_full_name
+from 
+  wdi_country
+where 
+  region = 'North America'
+order by 
+  short_name
 """)
 ```
 
@@ -206,9 +210,12 @@ order by short_name
 ## (skills: select, where)
 
 run_sql_and_return_html(cnx,"""
-select region, short_name, country_full_name
-from wdi_country
-where short_name = 'Qatar'
+select 
+  region, short_name, country_full_name
+from 
+  wdi_country
+where 
+  short_name = 'Qatar'
 """)
 ```
 
@@ -230,7 +237,7 @@ where
   or (country_abbr is null and country_wb_abbr is not null)
   or (country_abbr is not null and country_wb_abbr is null)
 order by 
-  region, short_name
+  short_name
 """)
 ```
 
@@ -521,10 +528,8 @@ grand_total as (
 select 
   ric.region,
   ric.income_group,
+  (select total from grand_total) as "Total Countries",
   ric.count as "Country Count",
-  rt.total as "Region Total",
-  it.total as "Income Group Total",
-  (select total from grand_total) as "Grand Total",
   round(ric.count / (select total from grand_total) * 100, 1) as "Percent of Total"
 from 
   region_income_counts ric
@@ -543,22 +548,6 @@ order by
 ## columns, Region in the rows and Percent of total in each cell of the table.
 
 run_sql_and_return_html(cnx,"""
-with region_income_counts as (
-  select 
-    region, 
-    income_group, 
-    count(*) as count
-  from 
-    wdi_country
-  group by 
-    region, income_group
-),
-grand_total as (
-  select 
-    count(*) as total
-  from 
-    wdi_country
-)
 select 
   region,
   round(sum(case when income_group = 'High income' then count else 0 end) / (select total from grand_total) * 100, 1) as "High income %",
