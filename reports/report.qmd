@@ -96,9 +96,9 @@ select
 from
   world_bank_data.wdi_country
 where
-  `Region` is null
-  or `Income Group` is null
-  or `Short Name` = 'World'
+  (`Region` is null
+   or (`Income Group` is null and `Short Name` <> 'Venezuela')
+   or `Short Name` = 'World')
 order by
   `Short Name`
 """)
