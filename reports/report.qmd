@@ -55,7 +55,6 @@ select
 from
   world_bank_data.wdi_country
 """)
-
 ```
 
 ## Task 2
@@ -74,7 +73,6 @@ from
   world_bank_data.wdi_country
 limit 5
 """)
-
 ```
 
 
@@ -148,7 +146,6 @@ run_sql_and_return_html(cnx,"""
 select count(*) as "Number of Countries in 2020"
 from wdi_country
 """)
-
 ```
 
 ## Task 6
@@ -167,7 +164,6 @@ select distinct region
 from wdi_country
 order by region
 """)
-
 ```
 
 ## Task 7
@@ -184,7 +180,6 @@ from wdi_country
 group by region
 order by count(*) desc
 """)
-
 ```
 
 ## Task 8
@@ -201,7 +196,6 @@ from wdi_country
 where lower(region) = 'north america'
 order by short_name
 """)
-
 ```
 
 ## Task 9
@@ -378,13 +372,13 @@ run_sql_and_return_html(cnx,"""
 select 
   count(*) as "Low Income Count",
   region, 
-  income_group
+  'Low income' as income_group
 from 
   wdi_country
 where 
   income_group = 'Low income'
 group by 
-  region, income_group
+  region
 order by 
   count(*) desc
 limit 1
@@ -404,7 +398,7 @@ limit 1
 
 run_sql_and_return_html(cnx,"""
 select 
-  country_code, short_name, region, income_group
+  wdi_country.country_code, wdi_country.short_name, wdi_country.region, wdi_country.income_group
 from 
   wdi_country
 where 
@@ -443,14 +437,16 @@ income_cte as (
 ),
 all_combinations_cte as (
   select 
-    r.region, i.income_group
+    r.region, 
+    i.income_group
   from 
     regions_cte r
     cross join income_cte i
 ),
 existing_combinations_cte as (
   select 
-    region, income_group
+    region, 
+    income_group
   from 
     wdi_country
   group by 
