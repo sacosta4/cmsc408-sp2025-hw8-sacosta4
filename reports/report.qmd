@@ -91,7 +91,7 @@ List all non-countries.
 
 run_sql_and_return_html(cnx,"""
 select
-  country_code, short_name, region
+  country_code, short_name, income_group
 from 
   world_bank_data.wdi_country
 where
@@ -216,7 +216,6 @@ select region, short_name, country_full_name
 from wdi_country
 where short_name = 'Qatar'
 """)
-
 ```
 
 ## Task 10
@@ -234,10 +233,11 @@ from
   wdi_country
 where 
   country_abbr != country_wb_abbr
+  or (country_abbr is null and country_wb_abbr is not null)
+  or (country_abbr is not null and country_wb_abbr is null)
 order by 
   region, short_name
 """)
-
 ```
 
 ## Task 11
@@ -258,7 +258,6 @@ group by
 order by 
   count(*) desc
 """)
-
 ```
 
 ## Task 12
@@ -280,7 +279,6 @@ where
 order by 
   short_name
 """)
-
 ```
 
 ## Task 13
@@ -294,10 +292,8 @@ order by
 execute_ddl(cnx,"""
 update wdi_country
 set income_group = 'High income'
-where short_name = 'Kuwait'
+where income_group is null
 """)
-
-
 ```
 ```{python}
 ## Now, display the country again to verify the change stuck!
@@ -308,9 +304,8 @@ select
 from 
   wdi_country
 where 
-  short_name = 'Kuwait'
+  short_name in ('Kuwait', 'Venezuela')
 """)
-
 ```
 
 ## Task 14
@@ -331,7 +326,6 @@ group by
 order by 
   region, income_group
 """)
-
 ```
 
 ## Task 15
@@ -356,7 +350,6 @@ select
   sum(case when income_group = 'Upper middle income' then 1 else 0 end) as "Upper middle income",
   sum(case when income_group = 'Lower middle income' then 1 else 0 end) as "Lower middle income",
   sum(case when income_group = 'Low income' then 1 else 0 end) as "Low income",
-  sum(case when income_group is null then 1 else 0 end) as "No Category",
   count(*) as "Row Total"
 from 
   wdi_country
@@ -365,7 +358,6 @@ group by
 order by 
   region
 """)
-
 ```
 
 ## Task 16
@@ -397,7 +389,6 @@ order by
   count(*) desc
 limit 1
 """)
-
 ```
 
 ## Task 17
@@ -422,7 +413,6 @@ where
 order by 
   short_name
 """)
-
 ```
 
 ## Task 18
@@ -446,11 +436,10 @@ order by
 
 run_sql_and_return_html(cnx,"""
 with regions_cte as (
-  select distinct region from wdi_country where region is not null
+  select distinct region from wdi_country
 ),
 income_cte as (
-  select distinct income_group from wdi_country where income_group is not null
-  union select null as income_group
+  select distinct income_group from wdi_country
 ),
 all_combinations_cte as (
   select 
@@ -461,7 +450,7 @@ all_combinations_cte as (
 ),
 existing_combinations_cte as (
   select 
-    region, income_group, count(*) as count
+    region, income_group
   from 
     wdi_country
   group by 
@@ -472,14 +461,12 @@ select
   ac.income_group
 from 
   all_combinations_cte ac
-  left join existing_combinations_cte ec on ac.region = ec.region and 
-    (ac.income_group is null and ec.income_group is null or ac.income_group = ec.income_group)
+  left join existing_combinations_cte ec on ac.region = ec.region and ac.income_group = ec.income_group
 where 
-  ec.count is null
+  ec.region is null
 order by 
   ac.region, ac.income_group
 """)
-
 ```
 
 ## Task 19
@@ -542,7 +529,7 @@ select
   rt.total as "Region Total",
   it.total as "Income Group Total",
   (select total from grand_total) as "Grand Total",
-  round(ric.count / (select total from grand_total) * 100, 2) as "Percent of Total"
+  round(ric.count / (select total from grand_total) * 100, 1) as "Percent of Total"
 from 
   region_income_counts ric
   join region_totals rt on ric.region = rt.region
@@ -550,8 +537,6 @@ from
 order by 
   ric.region, ric.income_group
 """)
-
-
 ```
 
 ## Task 20
@@ -574,18 +559,17 @@ with region_income_counts as (
 ),
 grand_total as (
   select 
-    sum(count) as total
+    count(*) as total
   from 
-    region_income_counts
+    wdi_country
 )
 select 
   region,
-  round(sum(case when income_group = 'High income' then count else 0 end) / (select total from grand_total) * 100, 2) as "High income %",
-  round(sum(case when income_group = 'Upper middle income' then count else 0 end) / (select total from grand_total) * 100, 2) as "Upper middle income %",
-  round(sum(case when income_group = 'Lower middle income' then count else 0 end) / (select total from grand_total) * 100, 2) as "Lower middle income %",
-  round(sum(case when income_group = 'Low income' then count else 0 end) / (select total from grand_total) * 100, 2) as "Low income %",
-  round(sum(case when income_group is null then count else 0 end) / (select total from grand_total) * 100, 2) as "No Category %",
-  round(sum(count) / (select total from grand_total) * 100, 2) as "Region % of Total"
+  round(sum(case when income_group = 'High income' then count else 0 end) / (select total from grand_total) * 100, 1) as "High income %",
+  round(sum(case when income_group = 'Upper middle income' then count else 0 end) / (select total from grand_total) * 100, 1) as "Upper middle income %",
+  round(sum(case when income_group = 'Lower middle income' then count else 0 end) / (select total from grand_total) * 100, 1) as "Lower middle income %",
+  round(sum(case when income_group = 'Low income' then count else 0 end) / (select total from grand_total) * 100, 1) as "Low income %",
+  round(sum(count) / (select total from grand_total) * 100, 1) as "Region % of Total"
 from 
   region_income_counts
 group by 
@@ -593,7 +577,6 @@ group by
 order by 
   region
 """)
-
 ```
 
 ## Task 21
@@ -625,13 +608,12 @@ select
   ic.income_group,
   ic.count as "Number of Countries",
   (select total from grand_total) as "Total Countries",
-  round(ic.count / (select total from grand_total) * 100, 2) as "Percent of Total"
+  round(ic.count / (select total from grand_total) * 100, 1) as "Percent of Total"
 from 
   income_counts ic
 order by 
   ic.count desc
 """)
-
 ```
 
 
