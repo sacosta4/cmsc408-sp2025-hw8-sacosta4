@@ -2,7 +2,7 @@
 name = "cmsc408-sp2025-hw8"
 version = "0.1.0"
 description = ""
-authors = ["John Leonard <john@lowkeylabs.com>"]
+authors = ["Steven Acosta <acostas@vcu.edu>"]
 readme = "README.md"
 package-mode = false
 
