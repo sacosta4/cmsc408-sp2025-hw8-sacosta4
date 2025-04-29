@@ -366,6 +366,7 @@ from
   world_bank_data.wdi_country
 where
   `Region` is not null
+  and `Income Group` is not null
 group by
   `Region`, `Income Group`
 order by
@@ -396,8 +397,8 @@ select
   sum(case when `Income Group` = 'Upper middle income' then 1 else 0 end) as `Upper Middle`,
   sum(case when `Income Group` = 'Lower middle income' then 1 else 0 end) as `Lower Middle`,
   sum(case when `Income Group` = 'Low income' then 1 else 0 end) as `Low`,
-  sum(case when `Income Group` is null or `Income Group` = '' then 1 else 0 end) as `Other`,
-  count(*) as `Total`
+  sum(case when `Income Group` is null then 1 else 0 end) as `Other`,
+  sum(1) as `Total`
 from
   world_bank_data.wdi_country
 where
@@ -464,7 +465,6 @@ from
 where
   `Region` = (select `Region` from world_bank_data.wdi_country where `Country Code` = 'MHL')
   and `Income Group` = (select `Income Group` from world_bank_data.wdi_country where `Country Code` = 'MHL')
-  and `Short Name` <> 'Marshall Islands'
 order by
   `Short Name`
 """)
@@ -491,16 +491,16 @@ order by
 ## (skills: select, where, subqueries, joins)
 
 run_sql_and_return_html(cnx,"""
-with all_pairs as (
-  select distinct
+with all_combinations as (
+  select
     r.`Region`,
     i.`Income Group`
   from
     (select distinct `Region` from world_bank_data.wdi_country where `Region` is not null) r
   cross join
-    (select distinct `Income Group` from world_bank_data.wdi_country) i
+    (select distinct `Income Group` from world_bank_data.wdi_country where `Income Group` is not null) i
 ),
-existing_pairs as (
+existing_combinations as (
   select distinct
     `Region`,
     `Income Group`
@@ -508,16 +508,15 @@ existing_pairs as (
     world_bank_data.wdi_country
   where
     `Region` is not null
+    and `Income Group` is not null
 )
 select
   a.`Region`,
   a.`Income Group`
 from
-  all_pairs a
-left join
-  existing_pairs e
-on
-  a.`Region` = e.`Region` and a.`Income Group` = e.`Income Group`
+  all_combinations a
+left join existing_combinations e
+on a.`Region` = e.`Region` and a.`Income Group` = e.`Income Group`
 where
   e.`Region` is null
 order by
