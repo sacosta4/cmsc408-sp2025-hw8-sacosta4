@@ -391,7 +391,7 @@ order by
 ## (skills: select, aggregate, group by, nested query)
 
 run_sql_and_return_html(cnx, """
-SELECT
+SELECT 
   `Region`,
   SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS `High`,
   SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS `Upper Middle`,
@@ -399,13 +399,13 @@ SELECT
   SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS `Low`,
   SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS `Other`,
   COUNT(*) AS `Total`
-FROM
+FROM 
   world_bank_data.wdi_country
-WHERE
+WHERE 
   `Region` IS NOT NULL
-GROUP BY
+GROUP BY 
   `Region`
-ORDER BY
+ORDER BY 
   `Region`
 """)
 
@@ -666,33 +666,33 @@ ORDER BY
 
 run_sql_and_return_html(cnx, """
 WITH income_counts AS (
-  SELECT
+  SELECT 
     `Income Group`,
     COUNT(*) AS count
-  FROM
+  FROM 
     world_bank_data.wdi_country
   WHERE
     `Region` IS NOT NULL
-  GROUP BY
+  GROUP BY 
     `Income Group`
 ),
 grand_total AS (
-  SELECT
+  SELECT 
     COUNT(*) AS total
-  FROM
+  FROM 
     world_bank_data.wdi_country
   WHERE
     `Region` IS NOT NULL
 )
-SELECT
+SELECT 
   `Income Group`,
   count AS `Number of Countries`,
   (SELECT total FROM grand_total) AS `Total Countries`,
   ROUND(count * 100.0 / (SELECT total FROM grand_total), 2) AS `Percentage`
-FROM
+FROM 
   income_counts
-ORDER BY
-  count DESC
+ORDER BY 
+  `Number of Countries` DESC
 """)
 
 ```
