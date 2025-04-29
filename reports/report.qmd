@@ -391,22 +391,35 @@ order by
 ## (skills: select, aggregate, group by, nested query)
 
 run_sql_and_return_html(cnx, """
+WITH region_summary AS (
+  SELECT
+    `Region`,
+    SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS `High`,
+    SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS `Upper Middle`,
+    SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS `Lower Middle`,
+    SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS `Low`,
+    SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS `Other`,
+    COUNT(*) AS `Total`
+  FROM world_bank_data.wdi_country
+  WHERE `Region` IS NOT NULL
+  GROUP BY `Region`
+)
+SELECT * FROM region_summary
+
+UNION ALL
+
 SELECT 
-  `Region`,
-  SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS `High`,
-  SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS `Upper Middle`,
-  SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS `Lower Middle`,
-  SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS `Low`,
-  SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS `Other`,
-  COUNT(*) AS `Total`
-FROM 
-  world_bank_data.wdi_country
-WHERE 
-  `Region` IS NOT NULL
-GROUP BY 
-  `Region`
+  'Total' AS `Region`,
+  SUM(`High`),
+  SUM(`Upper Middle`),
+  SUM(`Lower Middle`),
+  SUM(`Low`),
+  SUM(`Other`),
+  SUM(`Total`)
+FROM region_summary
+
 ORDER BY 
-  `Region`
+  CASE WHEN `Region` = 'Total' THEN 1 ELSE 0 END, `Region`
 """)
 
 ```
@@ -667,28 +680,29 @@ ORDER BY
 run_sql_and_return_html(cnx, """
 WITH income_counts AS (
   SELECT 
-    `Income Group`,
-    COUNT(*) AS count
+    CASE 
+      WHEN `Income Group` IS NULL THEN 'Other'
+      ELSE `Income Group`
+    END AS `Income Group`,
+    COUNT(*) AS `Number of Countries`
   FROM 
     world_bank_data.wdi_country
   WHERE
     `Region` IS NOT NULL
   GROUP BY 
-    `Income Group`
+    CASE 
+      WHEN `Income Group` IS NULL THEN 'Other'
+      ELSE `Income Group`
+    END
 ),
 grand_total AS (
-  SELECT 
-    COUNT(*) AS total
-  FROM 
-    world_bank_data.wdi_country
-  WHERE
-    `Region` IS NOT NULL
+  SELECT COUNT(*) AS total FROM world_bank_data.wdi_country WHERE `Region` IS NOT NULL
 )
 SELECT 
   `Income Group`,
-  count AS `Number of Countries`,
+  `Number of Countries`,
   (SELECT total FROM grand_total) AS `Total Countries`,
-  ROUND(count * 100.0 / (SELECT total FROM grand_total), 2) AS `Percentage`
+  ROUND(`Number of Countries` * 100.0 / (SELECT total FROM grand_total), 2) AS `Percentage`
 FROM 
   income_counts
 ORDER BY 
