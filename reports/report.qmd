@@ -391,35 +391,21 @@ order by
 ## (skills: select, aggregate, group by, nested query)
 
 run_sql_and_return_html(cnx, """
-WITH region_summary AS (
-  SELECT 
-    `Region`,
-    SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS `High`,
-    SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS `Upper Middle`,
-    SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS `Lower Middle`,
-    SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS `Low`,
-    SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS `Other`,
-    COUNT(*) AS `Total`
-  FROM 
-    world_bank_data.wdi_country
-  WHERE 
-    `Region` IS NOT NULL
-  GROUP BY 
-    `Region`
-)
-SELECT * FROM region_summary
-UNION ALL
 SELECT 
-  'Total' AS `Region`,
-  SUM(`High`),
-  SUM(`Upper Middle`),
-  SUM(`Lower Middle`),
-  SUM(`Low`),
-  SUM(`Other`),
-  SUM(`Total`)
-FROM region_summary
+  `Region`,
+  SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS `High`,
+  SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS `Upper Middle`,
+  SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS `Lower Middle`,
+  SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS `Low`,
+  SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS `Other`
+FROM 
+  world_bank_data.wdi_country
+WHERE 
+  `Region` IS NOT NULL
+GROUP BY 
+  `Region`
 ORDER BY 
-  CASE WHEN `Region` = 'Total' THEN 1 ELSE 0 END, `Region`
+  `Region`
 """)
 
 ```
@@ -681,7 +667,7 @@ run_sql_and_return_html(cnx, """
 WITH income_counts AS (
   SELECT 
     CASE 
-      WHEN `Income Group` IS NULL THEN 'Other' 
+      WHEN `Income Group` IS NULL THEN 'Other'
       ELSE `Income Group`
     END AS `Income Group`,
     COUNT(*) AS `Number of Countries`
@@ -691,7 +677,7 @@ WITH income_counts AS (
     `Region` IS NOT NULL
   GROUP BY 
     CASE 
-      WHEN `Income Group` IS NULL THEN 'Other' 
+      WHEN `Income Group` IS NULL THEN 'Other'
       ELSE `Income Group`
     END
 ),
