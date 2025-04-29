@@ -392,7 +392,7 @@ order by
 
 run_sql_and_return_html(cnx, """
 WITH region_summary AS (
-  SELECT
+  SELECT 
     `Region`,
     SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS `High`,
     SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS `Upper Middle`,
@@ -400,14 +400,15 @@ WITH region_summary AS (
     SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS `Low`,
     SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS `Other`,
     COUNT(*) AS `Total`
-  FROM world_bank_data.wdi_country
-  WHERE `Region` IS NOT NULL
-  GROUP BY `Region`
+  FROM 
+    world_bank_data.wdi_country
+  WHERE 
+    `Region` IS NOT NULL
+  GROUP BY 
+    `Region`
 )
 SELECT * FROM region_summary
-
 UNION ALL
-
 SELECT 
   'Total' AS `Region`,
   SUM(`High`),
@@ -417,7 +418,6 @@ SELECT
   SUM(`Other`),
   SUM(`Total`)
 FROM region_summary
-
 ORDER BY 
   CASE WHEN `Region` = 'Total' THEN 1 ELSE 0 END, `Region`
 """)
@@ -681,22 +681,27 @@ run_sql_and_return_html(cnx, """
 WITH income_counts AS (
   SELECT 
     CASE 
-      WHEN `Income Group` IS NULL THEN 'Other'
+      WHEN `Income Group` IS NULL THEN 'Other' 
       ELSE `Income Group`
     END AS `Income Group`,
     COUNT(*) AS `Number of Countries`
   FROM 
     world_bank_data.wdi_country
-  WHERE
+  WHERE 
     `Region` IS NOT NULL
   GROUP BY 
     CASE 
-      WHEN `Income Group` IS NULL THEN 'Other'
+      WHEN `Income Group` IS NULL THEN 'Other' 
       ELSE `Income Group`
     END
 ),
 grand_total AS (
-  SELECT COUNT(*) AS total FROM world_bank_data.wdi_country WHERE `Region` IS NOT NULL
+  SELECT 
+    COUNT(*) AS total
+  FROM 
+    world_bank_data.wdi_country
+  WHERE 
+    `Region` IS NOT NULL
 )
 SELECT 
   `Income Group`,
