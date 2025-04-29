@@ -391,20 +391,21 @@ order by
 ## (skills: select, aggregate, group by, nested query)
 
 run_sql_and_return_html(cnx, """
-SELECT 
+SELECT
   `Region`,
   SUM(CASE WHEN `Income Group` = 'High income' THEN 1 ELSE 0 END) AS `High`,
   SUM(CASE WHEN `Income Group` = 'Upper middle income' THEN 1 ELSE 0 END) AS `Upper Middle`,
   SUM(CASE WHEN `Income Group` = 'Lower middle income' THEN 1 ELSE 0 END) AS `Lower Middle`,
   SUM(CASE WHEN `Income Group` = 'Low income' THEN 1 ELSE 0 END) AS `Low`,
-  SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS `Other`
-FROM 
+  SUM(CASE WHEN `Income Group` IS NULL THEN 1 ELSE 0 END) AS `Other`,
+  COUNT(*) AS `Total`
+FROM
   world_bank_data.wdi_country
-WHERE 
+WHERE
   `Region` IS NOT NULL
-GROUP BY 
+GROUP BY
   `Region`
-ORDER BY 
+ORDER BY
   `Region`
 """)
 
@@ -639,15 +640,13 @@ grand_total AS (
 )
 SELECT
   c.`Region`,
-  ROUND(SUM(CASE WHEN c.`Income Group` = 'High income' THEN num_countries ELSE 0 END) * 100.0 / g.total_countries, 2) AS `High`,
-  ROUND(SUM(CASE WHEN c.`Income Group` = 'Upper middle income' THEN num_countries ELSE 0 END) * 100.0 / g.total_countries, 2) AS `Upper Middle`,
-  ROUND(SUM(CASE WHEN c.`Income Group` = 'Lower middle income' THEN num_countries ELSE 0 END) * 100.0 / g.total_countries, 2) AS `Lower Middle`,
-  ROUND(SUM(CASE WHEN c.`Income Group` = 'Low income' THEN num_countries ELSE 0 END) * 100.0 / g.total_countries, 2) AS `Low`,
-  ROUND(SUM(CASE WHEN c.`Income Group` IS NULL THEN num_countries ELSE 0 END) * 100.0 / g.total_countries, 2) AS `Other`
+  ROUND(SUM(CASE WHEN c.`Income Group` = 'High income' THEN num_countries ELSE 0 END) * 100.0 / (SELECT total_countries FROM grand_total), 2) AS `High`,
+  ROUND(SUM(CASE WHEN c.`Income Group` = 'Upper middle income' THEN num_countries ELSE 0 END) * 100.0 / (SELECT total_countries FROM grand_total), 2) AS `Upper Middle`,
+  ROUND(SUM(CASE WHEN c.`Income Group` = 'Lower middle income' THEN num_countries ELSE 0 END) * 100.0 / (SELECT total_countries FROM grand_total), 2) AS `Lower Middle`,
+  ROUND(SUM(CASE WHEN c.`Income Group` = 'Low income' THEN num_countries ELSE 0 END) * 100.0 / (SELECT total_countries FROM grand_total), 2) AS `Low`,
+  ROUND(SUM(CASE WHEN c.`Income Group` IS NULL THEN num_countries ELSE 0 END) * 100.0 / (SELECT total_countries FROM grand_total), 2) AS `Other`
 FROM
   counts c
-CROSS JOIN
-  grand_total g
 GROUP BY
   c.`Region`
 ORDER BY
@@ -667,32 +666,32 @@ ORDER BY
 
 run_sql_and_return_html(cnx, """
 WITH income_counts AS (
-  SELECT 
+  SELECT
     `Income Group`,
     COUNT(*) AS count
-  FROM 
+  FROM
     world_bank_data.wdi_country
-  WHERE 
+  WHERE
     `Region` IS NOT NULL
-  GROUP BY 
+  GROUP BY
     `Income Group`
 ),
 grand_total AS (
-  SELECT 
+  SELECT
     COUNT(*) AS total
-  FROM 
+  FROM
     world_bank_data.wdi_country
-  WHERE 
+  WHERE
     `Region` IS NOT NULL
 )
-SELECT 
+SELECT
   `Income Group`,
   count AS `Number of Countries`,
   (SELECT total FROM grand_total) AS `Total Countries`,
   ROUND(count * 100.0 / (SELECT total FROM grand_total), 2) AS `Percentage`
-FROM 
+FROM
   income_counts
-ORDER BY 
+ORDER BY
   count DESC
 """)
 
